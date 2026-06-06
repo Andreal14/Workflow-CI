@@ -76,10 +76,31 @@ with get_run_context():
     mlflow.log_metric("accuracy", acc)
     mlflow.log_metric("f1_score_weighted", f1)
 
+    # Define custom conda environment without Anaconda defaults channel to avoid licensing issues in Docker
+    custom_conda_env = {
+        "name": "mlflow-env",
+        "channels": ["conda-forge", "nodefaults"],
+        "dependencies": [
+            "python=3.12.7",
+            "pip",
+            {
+                "pip": [
+                    "mlflow==2.19.0",
+                    "scikit-learn",
+                    "pandas",
+                    "numpy",
+                    "matplotlib",
+                    "seaborn"
+                ]
+            }
+        ]
+    }
+
     # Simpan model
     mlflow.sklearn.log_model(
         model, 
         "model",
+        conda_env=custom_conda_env,
         registered_model_name="wine-quality-rf-model"
     )
 
