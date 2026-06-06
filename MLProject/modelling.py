@@ -53,8 +53,10 @@ y_test  = pd.read_csv(f"{DATA_DIR}/y_test.csv").squeeze()
 mlflow.set_experiment("Workflow-CI")
 
 with get_run_context():
-    mlflow.log_param("n_estimators", args.n_estimators)
-    mlflow.log_param("max_depth", args.max_depth)
+    # Log parameters only if not running within an MLflow Project (which automatically logs them)
+    if "MLFLOW_RUN_ID" not in os.environ:
+        mlflow.log_param("n_estimators", args.n_estimators)
+        mlflow.log_param("max_depth", args.max_depth)
 
     model = RandomForestClassifier(
         n_estimators=args.n_estimators,
