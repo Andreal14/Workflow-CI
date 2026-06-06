@@ -50,8 +50,8 @@ jobs:
           MODEL_URI=$(python -c "
           import mlflow
           client = mlflow.tracking.MlflowClient()
-          mv = client.get_latest_versions('wine-quality-rf-model', stages=['None'])[0]
-          print(f'models:/wine-quality-rf-model/{mv.version}', end='')
+          mv = client.get_latest_versions('heart-disease-rf-model', stages=['None'])[0]
+          print(f'models:/heart-disease-rf-model/{mv.version}', end='')
           ")
           echo "Model URI: $MODEL_URI"
           mlflow models build-docker \

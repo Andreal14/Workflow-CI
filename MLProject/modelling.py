@@ -3,6 +3,7 @@ modelling.py for MLProject (Workflow-CI)
 ========================================
 Script training yang menerima parameter CLI untuk dijalankan via MLflow Project.
 Melacak eksperimen ke DagsHub.
+Dataset: Heart Disease (UCI / Kaggle)
 """
 
 import mlflow
@@ -50,13 +51,13 @@ print(f"[INFO] Menginisialisasi DagsHub untuk {DAGSHUB_USERNAME}/{DAGSHUB_REPO}.
 dagshub.init(repo_owner=DAGSHUB_USERNAME, repo_name=DAGSHUB_REPO, mlflow=True)
 
 # Muat data
-DATA_DIR = "winequality_preprocessing"
+DATA_DIR = "heart_preprocessing"
 X_train = pd.read_csv(f"{DATA_DIR}/X_train.csv")
 X_test  = pd.read_csv(f"{DATA_DIR}/X_test.csv")
 y_train = pd.read_csv(f"{DATA_DIR}/y_train.csv").squeeze()
 y_test  = pd.read_csv(f"{DATA_DIR}/y_test.csv").squeeze()
 
-mlflow.set_experiment("Workflow-CI")
+mlflow.set_experiment("Workflow-CI-Heart-Disease")
 
 with get_run_context():
     safe_log_param("n_estimators", args.n_estimators)
@@ -101,7 +102,7 @@ with get_run_context():
         model, 
         "model",
         conda_env=custom_conda_env,
-        registered_model_name="wine-quality-rf-model"
+        registered_model_name="heart-disease-rf-model"
     )
 
     # Artefak: Confusion matrix
@@ -109,13 +110,13 @@ with get_run_context():
     fig, ax = plt.subplots(figsize=(8, 6))
     sns.heatmap(
         cm, annot=True, fmt='d', cmap='Blues',
-        xticklabels=["Bad Wine", "Good Wine"],
-        yticklabels=["Bad Wine", "Good Wine"],
+        xticklabels=["No Disease", "Disease"],
+        yticklabels=["No Disease", "Disease"],
         ax=ax
     )
     ax.set_xlabel("Predicted")
     ax.set_ylabel("Actual")
-    ax.set_title("Confusion Matrix - CI Run")
+    ax.set_title("Confusion Matrix - Heart Disease CI Run")
     plt.tight_layout()
     plt.savefig("confusion_matrix.png", dpi=150)
     mlflow.log_artifact("confusion_matrix.png")
