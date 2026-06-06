@@ -57,7 +57,7 @@ jobs:
           mlflow models build-docker \
             --model-uri "$MODEL_URI" \
             --name "${{ secrets.DOCKERHUB_USERNAME }}/msml-model:latest" \
-            --env-manager=conda \
+            --env-manager=local \
             --enable-mlserver
 
       # ── 6. Login & Push ke Docker Hub ──
