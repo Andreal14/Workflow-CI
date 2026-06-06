@@ -1,0 +1,70 @@
+name: CI — MLflow Training & Docker Build
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  train-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout kode ──
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Setup Python + Conda ──
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: '3.12.7'
+          activate-environment: msml-env
+          environment-file: MLProject/conda.yaml
+          auto-activate-base: false
+
+      # ── 3. Jalankan MLflow Project (Training) ──
+      - name: Run MLflow Project
+        env:
+          DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+        shell: bash -el {0}
+        run: |
+          cd MLProject
+          mlflow run . --env-manager=conda -P n_estimators=200 -P max_depth=10
+
+      # ── 4. Simpan artefak ke GitHub ──
+      - name: Upload model artifact to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlflow-model-artifact
+          path: MLProject/mlruns/
+          retention-days: 30
+
+      # ── 5. Build Docker Image menggunakan mlflow build-docker ──
+      - name: Build Docker Image
+        shell: bash -el {0}
+        run: |
+          MODEL_URI=$(python -c "
+          import mlflow
+          import dagshub
+          dagshub.init(repo_owner='Andreal14', repo_name='msml-project', mlflow=True)
+          client = mlflow.tracking.MlflowClient()
+          mv = client.get_latest_versions('wine-quality-rf-model', stages=['None'])[0]
+          print(f'models:/wine-quality-rf-model/{mv.version}')
+          ")
+          echo "Model URI: $MODEL_URI"
+          mlflow models build-docker \
+            --model-uri "$MODEL_URI" \
+            --name "${{ secrets.DOCKERHUB_USERNAME }}/msml-model:latest" \
+            --enable-mlserver
+
+      # ── 6. Login & Push ke Docker Hub ──
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push Docker Image to Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/msml-model:latest
