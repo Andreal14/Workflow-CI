@@ -18,6 +18,18 @@ import seaborn as sns
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classification_report
 
+import contextlib
+
+@contextlib.contextmanager
+def get_run_context():
+    if mlflow.active_run() is not None:
+        print("[INFO] Logging to existing active run.")
+        yield mlflow.active_run()
+    else:
+        print("[INFO] Starting a new MLflow run.")
+        with mlflow.start_run() as run:
+            yield run
+
 # Argumen CLI
 parser = argparse.ArgumentParser()
 parser.add_argument('--n_estimators', type=int, default=100)
@@ -40,7 +52,7 @@ y_test  = pd.read_csv(f"{DATA_DIR}/y_test.csv").squeeze()
 
 mlflow.set_experiment("Workflow-CI")
 
-with mlflow.start_run():
+with get_run_context():
     mlflow.log_param("n_estimators", args.n_estimators)
     mlflow.log_param("max_depth", args.max_depth)
 
